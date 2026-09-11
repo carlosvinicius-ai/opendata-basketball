@@ -470,6 +470,8 @@ Speed: feet/second
 
 ## 10. Key Cardinalities (ACB 2025-2026)
 
+### 10.1 Season-Wide Cardinalities
+
 | Entity | Count | Source |
 |---|---|---|
 | Games (full season) | 327 | ACB official |
@@ -482,6 +484,32 @@ Speed: feet/second
 | Shot events (FIBA `attempts`) | 38,029 | Season aggregates |
 | Total shot events (incl. fouled misses) | 41,684 | Raw `shots` tables |
 | Tracking fps | 25 | Fixed |
+
+### 10.2 Measured Cardinalities Across the 10 Sample Games (Empirical Profiling)
+
+| Event Table | Total Events (10 Games) | Avg Per Game | Description |
+|---|---|---|---|
+| `chance_players` | 20,540 | 2,054.0 | On-court player presence and assignments per chance |
+| `matchups` | 14,416 | 1,441.6 | Defensive matchups and coverage assignments |
+| `dribbles` | 13,962 | 1,396.2 | Individual dribble actions |
+| `touches` | 6,662 | 666.2 | Ball touches (central connective tissue) |
+| `passes` | 4,786 | 478.6 | Pass events between players |
+| `chances` | 2,055 | 205.5 | Discrete scoring opportunities |
+| `possessions` | 1,564 | 156.4 | Team possessions |
+| `picks` | 1,520 | 152.0 | Pick-and-roll / on-ball screen actions |
+| `shots` | 1,459 | 145.9 | Field goal and shot attempts |
+| `off_ball_screens` | 1,103 | 110.3 | Off-ball screens for cutters |
+| `rebounds` | 768 | 76.8 | Offensive and defensive rebounds |
+| `drives` | 660 | 66.0 | Drives toward the hoop |
+| `closeouts` | 601 | 60.1 | Defensive closeout actions |
+| `fouls` | 443 | 44.3 | Personal and technical fouls |
+| `free_throws` | 430 | 43.0 | Free throw attempts |
+| `handoffs` | 417 | 41.7 | Dribble hand-off plays |
+| `turnovers` | 248 | 24.8 | Ball turnovers |
+| `isolations` | 180 | 18.0 | Isolation plays |
+| `posts` | 105 | 10.5 | Post-up actions |
+| `timeouts` | 65 | 6.5 | Team and official timeouts |
+| **Total Events** | **71,984** | **7,198.4** | **Sum across all 20 event tables** |
 
 ---
 
