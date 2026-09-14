@@ -23,6 +23,8 @@ class GraphData:
     y: int  # Target label (1 if chance resulted in made basket, else 0)
     node_player_ids: list[int | None] = field(default_factory=list)
     num_nodes: int = 0
+    chance_id: Any = None
+    game_id: int | None = None
 
     def to_torch_geometric(self) -> Any:
         """Convert to torch_geometric.data.Data if torch and torch_geometric are installed."""
@@ -30,13 +32,17 @@ class GraphData:
             import torch
             from torch_geometric.data import Data
 
-            return Data(
+            data = Data(
                 x=torch.tensor(self.x, dtype=torch.float32),
                 edge_index=torch.tensor(self.edge_index, dtype=torch.long),
                 edge_attr=torch.tensor(self.edge_attr, dtype=torch.float32),
                 y=torch.tensor([self.y], dtype=torch.long),
                 num_nodes=self.num_nodes,
             )
+            data.node_player_ids = self.node_player_ids
+            data.chance_id = self.chance_id
+            data.game_id = self.game_id
+            return data
         except ImportError:
             return self
 
@@ -52,6 +58,8 @@ class GraphBuilder:
         chance_tracking_df: pl.DataFrame,
         chance_outcome: str = "",
         off_team_id: int | None = None,
+        chance_id: Any = None,
+        game_id: int | None = None,
     ) -> GraphData:
         """Construct graph from tracking frames of a single chance.
 
@@ -59,6 +67,8 @@ class GraphBuilder:
             chance_tracking_df: Tracking rows filtered to chance frame window.
             chance_outcome: e.g. 'made_basket', 'missed_basket'.
             off_team_id: Identifier of attacking team.
+            chance_id: Identifier of chance.
+            game_id: Identifier of match.
 
         Returns:
             GraphData object containing node features, edges, distances, and label.
@@ -66,7 +76,15 @@ class GraphBuilder:
         label = 1 if "made" in chance_outcome.lower() or chance_outcome == "made_basket" else 0
 
         if chance_tracking_df.is_empty():
-            return GraphData(x=[], edge_index=[[], []], edge_attr=[], y=label, num_nodes=0)
+            return GraphData(
+                x=[],
+                edge_index=[[], []],
+                edge_attr=[],
+                y=label,
+                num_nodes=0,
+                chance_id=chance_id,
+                game_id=game_id,
+            )
 
         # Aggregate player and ball statistics over the chance window
         # Group by player_id / is_ball
@@ -120,6 +138,8 @@ class GraphBuilder:
             y=label,
             node_player_ids=node_player_ids,
             num_nodes=num_nodes,
+            chance_id=chance_id,
+            game_id=game_id,
         )
 
         return graph
@@ -129,6 +149,8 @@ def build_chance_graph(
     chance_tracking_df: pl.DataFrame,
     chance_outcome: str = "",
     off_team_id: int | None = None,
+    chance_id: Any = None,
+    game_id: int | None = None,
 ) -> GraphData:
     """Convenience helper to build a chance graph."""
     builder = GraphBuilder()
@@ -136,4 +158,6 @@ def build_chance_graph(
         chance_tracking_df=chance_tracking_df,
         chance_outcome=chance_outcome,
         off_team_id=off_team_id,
+        chance_id=chance_id,
+        game_id=game_id,
     )
