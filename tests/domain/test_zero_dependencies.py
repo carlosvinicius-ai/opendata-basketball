@@ -75,3 +75,31 @@ def test_domain_zero_external_dependencies_runtime():
             assert pkg not in mod.__dict__, (
                 f"Forbidden package reference '{pkg}' found in namespace of {mod.__name__}"
             )
+
+
+def test_presentation_never_imports_domain_directly():
+    """Verify via AST that src/presentation/ never imports directly from src/domain/.
+
+    Clean Architecture rule: Presentation layer must interact with Domain solely
+    via Use Cases and Infrastructure adapters, never through direct Domain imports.
+    """
+    pres_dir = Path(__file__).resolve().parent.parent.parent / "src" / "presentation"
+    py_files = list(pres_dir.glob("*.py"))
+    assert len(py_files) > 0, "No presentation python files found to inspect"
+
+    for file_path in py_files:
+        tree = ast.parse(file_path.read_text(encoding="utf-8"), filename=str(file_path))
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Import):
+                for alias in node.names:
+                    root_pkg = alias.name.split(".")[0]
+                    assert root_pkg != "domain", (
+                        f"Clean Architecture violation: {file_path.name}:L{node.lineno} imports directly from 'domain'"
+                    )
+            elif isinstance(node, ast.ImportFrom):
+                if node.module:
+                    root_pkg = node.module.split(".")[0]
+                    assert root_pkg != "domain", (
+                        f"Clean Architecture violation: {file_path.name}:L{node.lineno} imports directly from 'domain'"
+                    )
+

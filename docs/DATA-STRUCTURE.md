@@ -511,6 +511,16 @@ Speed: feet/second
 | `timeouts` | 65 | 6.5 | Team and official timeouts |
 | **Total Events** | **71,984** | **7,198.4** | **Sum across all 20 event tables** |
 
+### 10.3 Derived Analytical Pipeline Cardinalities (FSPV Framework)
+
+| Analytical Artifact | Cardinality | Notes |
+|---|---|---|
+| Sequenced On-Ball Actions (BAV) | 15,087 | Sequenced across 10 games (`TOUCH`, `PASS`, `SHOT`, `PICK`, `DRIVE`, `DRIBBLE`) |
+| Chance Spatial Graphs (SCI) | 100 | Sampled 11-node PyG `Data` graphs across 10 games |
+| Players Ranked (FSPV) | 203 | Normalized and evaluated against season aggregates |
+| Overlapping Players with Shots Aggregates | 209 | $p = 0.042$, Spearman $\rho = +0.141$ |
+| Overlapping Players with Picks Aggregates | 168 | $p = 0.125$, Spearman $\rho = -0.119$ |
+
 ---
 
 ## 11. Profiling Scripts
