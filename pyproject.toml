@@ -12,16 +12,15 @@ authors = [
     { name = "Carlos Vinicius" }
 ]
 dependencies = [
-    "polars>=1.0.0,<2.0.0",
-    "floodlight>=1.2.0",
-    "unravelsports>=1.2.0",
+    "polars>=1.0.0",
     "torch>=2.0.0,<3.0.0",
     "torch-geometric>=2.0.0,<3.0.0",
     "xgboost>=2.0.0,<4.0.0",
     "shap>=0.40.0,<1.0.0",
     "scikit-learn>=1.4.0,<2.0.0",
-    "mplbasketball",
-    "skillcornerviz",
+    "scipy>=1.10.0",
+    "matplotlib>=3.7.0",
+    "numpy>=1.24.0",
     "python-dotenv>=1.0.0",
 ]
 
