@@ -8,7 +8,7 @@ import argparse
 import sys
 from pathlib import Path
 
-from infrastructure.event_loader import load_events
+from infrastructure.event_loader import load_events, load_player_directory
 from infrastructure.tracking_loader import load_tracking
 from presentation.report_builder import ReportBuilder
 from use_cases.bav.action_sequencer import ActionSequencer
@@ -37,7 +37,7 @@ def cmd_run_bav(args: argparse.Namespace) -> int:
     all_features = []
     for gid in games:
         events = load_events(gid)
-        sequenced = sequencer.sequence_actions(events, game_id=gid)
+        sequenced = sequencer.extract_sequences(events, game_id=gid)
         if sequenced.is_empty():
             continue
         tracking_df = load_tracking(gid, max_frames=2000)
@@ -53,21 +53,18 @@ def cmd_run_bav(args: argparse.Namespace) -> int:
     print(f"[*] Extracted {len(full_df)} actions for BAV.")
 
     model = BAVModel()
-    train_df = full_df.filter(pl.col("game_id").is_in(TRAIN_GAMES))
-    test_df = full_df.filter(pl.col("game_id").is_in(TEST_GAMES))
-
-    if train_df.is_empty():
-        train_df = full_df
-        test_df = full_df
-
-    model.fit(train_df)
-    eval_metrics = model.evaluate(test_df)
-    print(f"[+] BAV Test Metrics: Brier={eval_metrics.get('brier_score', 0.0):.4f}, AUC={eval_metrics.get('auc_roc', 0.0):.4f}")
-    model.save("models/bav_xgboost.json")
+    metrics = model.train_and_evaluate(
+        full_df,
+        train_games=tuple(TRAIN_GAMES),
+        test_games=tuple(TEST_GAMES),
+        model_save_path="models/bav_xgboost.json",
+    )
+    print(f"[+] BAV Test Metrics: Brier={metrics.get('brier_score', 0.0):.4f}, AUC={metrics.get('auc_roc', 0.0):.4f}")
     print("[+] BAV model fitted and saved to models/bav_xgboost.json")
 
     scorer = BAVScorer(model=model)
-    bav_scores = scorer.score_actions(full_df)
+    scored_actions = scorer.score_actions(full_df)
+    bav_scores = scorer.aggregate_player_bav(scored_actions, save_path="outputs/scores/bav_scores.parquet")
     print(f"[+] Computed BAV scores for {len(bav_scores)} players.")
     return 0
 
@@ -98,7 +95,7 @@ def cmd_run_sci(args: argparse.Namespace) -> int:
     print("[+] GraphSAGE model trained and saved to models/sci_graphsage.pt")
 
     calculator = SCICalculator(model=model)
-    sci_scores = calculator.calculate_player_sci(graphs)
+    sci_scores = calculator.calculate_player_sci(graphs, output_path="outputs/scores/sci_scores.parquet")
     print(f"[+] Computed SCI scores for {len(sci_scores)} players.")
     return 0
 
@@ -113,9 +110,11 @@ def cmd_run_all(args: argparse.Namespace) -> int:
     bav_path = "outputs/scores/bav_scores.parquet"
     sci_path = "outputs/scores/sci_scores.parquet"
 
+    player_meta = load_player_directory()
     rankings = combiner.combine(
         bav_scores=bav_path if Path(bav_path).exists() else [],
         sci_scores=sci_path if Path(sci_path).exists() else [],
+        player_metadata=player_meta,
     )
     print(f"[+] FSPV Rankings computed for {len(rankings)} players.")
 

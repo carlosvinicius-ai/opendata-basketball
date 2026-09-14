@@ -54,3 +54,27 @@ def test_sci_features_do_not_leak_from_aggregates():
     leaked_columns = sci_feature_names.intersection(aggregate_columns)
     assert not leaked_columns, f"Data leakage in SCI features: {leaked_columns}"
 
+
+def test_bav_and_sci_modules_never_import_aggregates():
+    """Verify via AST that BAV and SCI model code never imports aggregate loaders."""
+    import ast
+    from pathlib import Path
+
+    src_root = Path("src/use_cases")
+    for py_file in src_root.rglob("*.py"):
+        # validator.py is the only module allowed to compare against aggregates externally
+        if "validator" in py_file.name:
+            continue
+        tree = ast.parse(py_file.read_text(encoding="utf-8"))
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Import):
+                for alias in node.names:
+                    assert "aggregate" not in alias.name.lower(), (
+                        f"Data leakage risk: {py_file} imports '{alias.name}'"
+                    )
+            elif isinstance(node, ast.ImportFrom):
+                module = node.module or ""
+                assert "aggregate" not in module.lower(), (
+                    f"Data leakage risk: {py_file} imports from '{module}'"
+                )
+
