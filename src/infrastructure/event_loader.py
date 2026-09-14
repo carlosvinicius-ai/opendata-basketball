@@ -113,3 +113,60 @@ def load_events(game_id: int, base_data_dir: Path | str = "data") -> dict[str, p
     """Convenience helper to load dynamic events for a game."""
     loader = EventLoader(base_data_dir=base_data_dir)
     return loader.load_events(game_id)
+
+
+def load_player_directory(base_data_dir: Path | str = "data") -> dict[int, dict[str, str]]:
+    """Load player directory (name, team) across all game_data.json and alias records.
+
+    Returns:
+        Dictionary mapping canonical player_id to metadata dict with 'name' and 'team'.
+    """
+    base = Path(base_data_dir)
+    resolver = get_alias_resolver()
+    directory: dict[int, dict[str, str]] = {}
+
+    # 1. Scan all match game_data.json files
+    match_dirs = list((base / "matches").glob("*/*_game_data.json"))
+    for json_file in match_dirs:
+        try:
+            with open(json_file, encoding="utf-8") as f:
+                data = json.load(f)
+            for side in ("homeTeam", "awayTeam"):
+                team_obj = data.get(side, {})
+                team_name = team_obj.get("teamName", "Unknown")
+                for p in team_obj.get("players", []):
+                    raw_pid = p.get("playerId")
+                    if raw_pid is not None:
+                        can_id = resolver.resolve_id(int(raw_pid))
+                        first = p.get("firstName", "").strip()
+                        last = p.get("lastName", "").strip()
+                        full_name = f"{first} {last}".strip() or f"Player #{can_id}"
+                        if can_id not in directory or directory[can_id]["name"].startswith("Player #"):
+                            directory[can_id] = {
+                                "name": full_name,
+                                "team": team_name,
+                                "position": "Player",
+                            }
+        except Exception:
+            continue
+
+    # 2. Augment with player_id_aliases.csv
+    alias_csv = base / "player_id_aliases.csv"
+    if alias_csv.exists():
+        try:
+            alias_df = pl.read_csv(alias_csv)
+            for r in alias_df.iter_rows(named=True):
+                can_id = int(r.get("canonical_player_id") or r["player_id"])
+                can_name = r.get("canonical_player_name") or r.get("player_name")
+                if can_id not in directory:
+                    directory[can_id] = {
+                        "name": str(can_name),
+                        "team": "Liga ACB",
+                        "position": "Player",
+                    }
+                elif directory[can_id]["name"].startswith("Player #") and can_name:
+                    directory[can_id]["name"] = str(can_name)
+        except Exception:
+            pass
+
+    return directory
