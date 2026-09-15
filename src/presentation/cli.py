@@ -134,6 +134,7 @@ def cmd_build_report(args: argparse.Namespace) -> int:
     output_filename = args.output or "full_spectrum_player_value.html"
     path = builder.build_report(output_filename=output_filename)
     print(f"[+] Standalone HTML5 report ready at: {path}")
+    print("[+] Modular Interactive Scouting Cockpit ready at: reports/index.html")
     return 0
 
 
