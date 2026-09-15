@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Full Spectrum Player Value (BAV + SCI) — Liga ACB Tactical Scouting Cockpit</title>
+  
+  <!-- CSS Design System -->
+  <link rel="stylesheet" href="css/styles.css">
+  
+  <!-- Chart.js v4 -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+</head>
+<body>
+
+  <!-- Floating Tooltip for Court Matrix -->
+  <div id="courtTooltip" class="floating-tooltip"></div>
+
+  <!-- Slide-Over Drawer Backdrop -->
+  <div id="drawerBackdrop" class="drawer-backdrop"></div>
+
+  <!-- Player Scouting Dossier Drawer -->
+  <div id="scoutingDrawer" class="scouting-drawer">
+    <div class="drawer-header">
+      <div>
+        <h2 id="drawerPlayerName" style="font-size: 20px; font-weight: 800; color: #f8fafc;">Player Dossier</h2>
+        <div id="drawerPlayerTeam" style="font-size: 13px; color: #94a3b8; margin-top: 2px;">Team · #00 · POS</div>
+        <span id="drawerArchetypeBadge" class="badge-pill pill-gold" style="margin-top: 8px; display: inline-block; font-size: 11px; padding: 2px 8px; border-radius: 9999px;">Archetype</span>
+      </div>
+      <button id="drawerCloseBtn" class="drawer-close-btn" title="Close (Esc)">&times;</button>
+    </div>
+
+    <!-- Percentile Gauges -->
+    <div>
+      <div class="drawer-section-title">Impact Metrics & Percentiles</div>
+      
+      <div class="meter-bar-wrapper">
+        <div class="meter-label-row">
+          <span style="font-weight: 600; color: #4ade80;">Overall FSPV Synthesis</span>
+          <span id="meterFspvVal" style="font-weight: 700; color: #4ade80;">--</span>
+        </div>
+        <div class="meter-track"><div id="meterFspvFill" class="meter-fill" style="width: 0%;"></div></div>
+      </div>
+
+      <div class="meter-bar-wrapper">
+        <div class="meter-label-row">
+          <span style="font-weight: 600; color: #38bdf8;">BAV (On-Ball Creation)</span>
+          <span id="meterBavVal" style="font-weight: 700; color: #38bdf8;">--</span>
+        </div>
+        <div class="meter-track"><div id="meterBavFill" class="meter-fill" style="width: 0%;"></div></div>
+      </div>
+
+      <div class="meter-bar-wrapper">
+        <div class="meter-label-row">
+          <span style="font-weight: 600; color: #c084fc;">SCI (Off-Ball Spacing Gravity)</span>
+          <span id="meterSciVal" style="font-weight: 700; color: #c084fc;">--</span>
+        </div>
+        <div class="meter-track"><div id="meterSciFill" class="meter-fill" style="width: 0%;"></div></div>
+      </div>
+    </div>
+
+    <!-- PnR Defense Vulnerability -->
+    <div>
+      <div class="drawer-section-title">Efficiency vs. Pick & Roll Defensive Schemes</div>
+      
+      <div class="meter-bar-wrapper">
+        <div class="meter-label-row">
+          <span style="color: #cbd5e1;">vs. Drop Coverage</span>
+          <span id="pnrDropVal" style="font-weight: 700; color: #38bdf8;">--</span>
+        </div>
+        <div class="meter-track"><div id="pnrDropBar" class="meter-fill" style="width: 0%; background: #38bdf8;"></div></div>
+      </div>
+
+      <div class="meter-bar-wrapper">
+        <div class="meter-label-row">
+          <span style="color: #cbd5e1;">vs. Switch Coverage</span>
+          <span id="pnrSwitchVal" style="font-weight: 700; color: #c084fc;">--</span>
+        </div>
+        <div class="meter-track"><div id="pnrSwitchBar" class="meter-fill" style="width: 0%; background: #c084fc;"></div></div>
+      </div>
+
+      <div class="meter-bar-wrapper">
+        <div class="meter-label-row">
+          <span style="color: #cbd5e1;">vs. Blitz / Trap</span>
+          <span id="pnrBlitzVal" style="font-weight: 700; color: #f59e0b;">--</span>
+        </div>
+        <div class="meter-track"><div id="pnrBlitzBar" class="meter-fill" style="width: 0%; background: #f59e0b;"></div></div>
+      </div>
+
+      <div class="meter-bar-wrapper">
+        <div class="meter-label-row">
+          <span style="color: #cbd5e1;">vs. Ice / Down</span>
+          <span id="pnrIceVal" style="font-weight: 700; color: #4ade80;">--</span>
+        </div>
+        <div class="meter-track"><div id="pnrIceBar" class="meter-fill" style="width: 0%; background: #4ade80;"></div></div>
+      </div>
+    </div>
+
+    <!-- Favorite Zones -->
+    <div>
+      <div class="drawer-section-title">Top Spatial Impact Zones</div>
+      <div id="drawerFavZones" style="display: flex; flex-wrap: wrap; gap: 4px;"></div>
+    </div>
+
+    <!-- Automated Scouting Guidelines -->
+    <div>
+      <div class="drawer-section-title">Coaching Staff Tactical Directives</div>
+      <div class="tactical-box">
+        <h5 style="color: #4ade80;">Offensive Strengths</h5>
+        <p id="drawerStrengths" style="color: #94a3b8; margin-bottom: 10px;">--</p>
+        
+        <h5 style="color: #f59e0b;">Defensive Concessions</h5>
+        <p id="drawerConcessions" style="color: #94a3b8; margin-bottom: 10px;">--</p>
+        
+        <h5 style="color: #38bdf8;">Recommended Tactical Scheme</h5>
+        <p id="drawerScheme" style="color: #cbd5e1;">--</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Cockpit Header -->
+  <header class="header-bar">
+    <div>
+      <h1 class="brand-title">Full Spectrum Player Value (BAV + SCI)</h1>
+      <div class="brand-subtitle">
+        <span>SkillCorner Basketball Analytics Cup</span>
+        <span>•</span>
+        <span>Liga Endesa ACB 2025/2026</span>
+        <span>•</span>
+        <span style="color: #4ade80;">203 Evaluated Athletes</span>
+      </div>
+    </div>
+
+    <div class="header-badges">
+      <span class="badge-tag" style="color: #38bdf8; border-color: rgba(56,189,248,0.3);">
+        <span style="width: 6px; height: 6px; border-radius: 50%; background: #38bdf8;"></span>
+        BAV (On-Ball)
+      </span>
+      <span class="badge-tag" style="color: #c084fc; border-color: rgba(192,132,252,0.3);">
+        <span style="width: 6px; height: 6px; border-radius: 50%; background: #c084fc;"></span>
+        SCI (Off-Ball GNN)
+      </span>
+      <span class="badge-tag" style="color: #4ade80; border-color: rgba(74,222,128,0.3);">
+        <span style="width: 6px; height: 6px; border-radius: 50%; background: #4ade80;"></span>
+        Unified FSPV
+      </span>
+      <button id="btnToggleAudit" class="btn-audit-toggle">▼ Scientific Audit & Rigor</button>
+    </div>
+  </header>
+
+  <!-- Scientific Audit Drawer -->
+  <div id="auditDrawer" class="audit-drawer">
+    <div class="audit-grid">
+      <div class="audit-metric-box">
+        <div class="audit-label">Calibration Brier Score</div>
+        <div class="audit-value">0.2423</div>
+        <div class="audit-desc">Strict holdout test evaluation (< 0.25 standard calibration threshold).</div>
+      </div>
+      <div class="audit-metric-box">
+        <div class="audit-label">Spearman Rank Correlation (Shots)</div>
+        <div class="audit-value">ρ = +0.14</div>
+        <div class="audit-desc">External validation against 293 regular season games.</div>
+      </div>
+      <div class="audit-metric-box">
+        <div class="audit-label">Data Isolation</div>
+        <div class="audit-value" style="color: #4ade80;">ZERO LEAKAGE</div>
+        <div class="audit-desc">AST-verified architecture ensuring zero target leakage into splits.</div>
+      </div>
+      <div class="audit-metric-box">
+        <div class="audit-label">Temporal Test Split</div>
+        <div class="audit-value" style="font-size: 15px; color: #f59e0b;">8 Train / 2 Holdout Games</div>
+        <div class="audit-desc">Holdout on most recent games (May 2026: 188630 & 191313).</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Top 4 KPI Metric Cards -->
+  <div class="kpi-grid">
+    <div class="kpi-card fspv-lead">
+      <div class="kpi-role">
+        <span>FSPV Offensive Leader</span>
+        <span class="kpi-percentile-badge pill-fspv" id="kpiFspvPct">100% Top</span>
+      </div>
+      <div class="kpi-player-name" id="kpiFspvLeadName">Markus Howard</div>
+      <div class="kpi-player-team" id="kpiFspvLeadTeam">Bitci Baskonia · SG</div>
+      <div class="kpi-stats-row">
+        <span style="font-size: 12px; color: #94a3b8;">FSPV Score</span>
+        <span class="kpi-score-pill" style="color: #4ade80;" id="kpiFspvScore">+2.22</span>
+      </div>
+    </div>
+
+    <div class="kpi-card bav-lead">
+      <div class="kpi-role">
+        <span>On-Ball Decision Engine</span>
+        <span class="kpi-percentile-badge pill-bav" id="kpiBavPct">Top BAV</span>
+      </div>
+      <div class="kpi-player-name" id="kpiBavLeadName">Loucas Nzambi Maniema</div>
+      <div class="kpi-player-team" id="kpiBavLeadTeam">Dreamland Gran Canaria · SF</div>
+      <div class="kpi-stats-row">
+        <span style="font-size: 12px; color: #94a3b8;">BAV Score</span>
+        <span class="kpi-score-pill" style="color: #38bdf8;" id="kpiBavScore">+3.97</span>
+      </div>
+    </div>
+
+    <div class="kpi-card sci-lead">
+      <div class="kpi-role">
+        <span>Off-Ball Spacing Anchor</span>
+        <span class="kpi-percentile-badge pill-sci" id="kpiSciPct">Top SCI</span>
+      </div>
+      <div class="kpi-player-name" id="kpiSciLeadName">Markus Howard</div>
+      <div class="kpi-player-team" id="kpiSciLeadTeam">Bitci Baskonia · SG</div>
+      <div class="kpi-stats-row">
+        <span style="font-size: 12px; color: #94a3b8;">SCI Score</span>
+        <span class="kpi-score-pill" style="color: #c084fc;" id="kpiSciScore">+2.72</span>
+      </div>
+    </div>
+
+    <div class="kpi-card avg-lead">
+      <div class="kpi-role">
+        <span>Active Rotation Mean</span>
+        <span class="kpi-percentile-badge pill-gold" id="kpiCohortCount">203 Players</span>
+      </div>
+      <div class="kpi-player-name" id="kpiAvgScore">+0.00</div>
+      <div class="kpi-player-team">Normalized Z-Score Base (Mean = 0.0)</div>
+      <div class="kpi-stats-row">
+        <span style="font-size: 12px; color: #94a3b8;">Tracking Scope</span>
+        <span style="font-size: 13px; font-weight: 700; color: #f8fafc;">10 Matches</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Global Reactive Filters Bar -->
+  <div class="filters-bar">
+    <div class="filter-group">
+      <span class="filter-label">Team:</span>
+      <select id="teamSelect" class="team-select">
+        <option value="ALL">All Teams (Liga ACB)</option>
+      </select>
+    </div>
+
+    <div class="filter-group">
+      <span class="filter-label">Position:</span>
+      <div class="pos-chips-container">
+        <button class="pos-chip active" data-pos="ALL">ALL</button>
+        <button class="pos-chip" data-pos="PG">PG</button>
+        <button class="pos-chip" data-pos="SG">SG</button>
+        <button class="pos-chip" data-pos="SF">SF</button>
+        <button class="pos-chip" data-pos="PF">PF</button>
+        <button class="pos-chip" data-pos="C">C</button>
+      </div>
+    </div>
+
+    <div class="search-input-box">
+      <span class="search-icon">🔍</span>
+      <input type="text" id="playerSearchInput" class="search-input" placeholder="Search player, team, or archetype...">
+    </div>
+  </div>
+
+  <!-- Top 5 Rotation Spotlight -->
+  <div class="top5-container" id="top5Container"></div>
+
+  <!-- Full-Width Section: 14x10 Tactical Court Matrix -->
+  <div class="panel-card full-width-card">
+    <div class="panel-header">
+      <div>
+        <h2 class="panel-title">Tactical Court Spatial Matrix (14×10)</h2>
+        <div class="panel-subtitle">FIBA half-court & transition space discretized into 140 tactical cells</div>
+      </div>
+      <div class="mode-switch">
+        <button id="modeBtnLeader" class="mode-btn active">Zone Impact Leader</button>
+        <button id="modeBtnBalance" class="mode-btn">BAV vs SCI Balance</button>
+      </div>
+    </div>
+
+    <div class="court-container" id="courtMatrixContainer">
+      <!-- SVG rendered dynamically by court_matrix.js -->
+    </div>
+    
+    <div style="display: flex; justify-content: space-between; margin-top: 10px; font-size: 11px; color: #64748b;">
+      <span>◀ Left Offensive Paint</span>
+      <span>Hover over cells for granular metrics · Click block to open Player Dossier</span>
+      <span>Right Offensive Paint ▶</span>
+    </div>
+  </div>
+
+  <!-- Side-by-Side Section: Positional Radar & Tactical Scatter Plot -->
+  <div class="charts-grid">
+    <!-- Positional Radar Chart -->
+    <div class="panel-card">
+      <div class="panel-header">
+        <div>
+          <h2 class="panel-title">Positional Radar: On-Ball vs Off-Ball Impact</h2>
+          <div class="panel-subtitle">Cohort average across the 5 classical positions</div>
+        </div>
+      </div>
+      <div class="chart-box">
+        <canvas id="radarChartCanvas"></canvas>
+      </div>
+    </div>
+
+    <!-- Tactical Scatter Plot -->
+    <div class="panel-card">
+      <div class="panel-header">
+        <div>
+          <h2 class="panel-title">Tactical Archetypes Scatter (BAV vs SCI)</h2>
+          <div class="panel-subtitle">Four-quadrant classification of creation vs spatial gravity</div>
+        </div>
+      </div>
+      <div class="chart-box">
+        <canvas id="scatterChartCanvas"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- General Leaderboard Table -->
+  <div class="table-card">
+    <div class="panel-header">
+      <div>
+        <h2 class="panel-title">Player Leaderboard & Rankings (Full Spectrum Player Value)</h2>
+        <div class="panel-subtitle">Complete auditable standings · Click column header to sort · Click row to open Player Dossier</div>
+      </div>
+    </div>
+
+    <div class="data-table-wrapper">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th data-sort="fspv_score">Rank</th>
+            <th data-sort="player_name">Player</th>
+            <th data-sort="team">Team</th>
+            <th data-sort="position">Pos</th>
+            <th data-sort="archetype">Tactical Archetype</th>
+            <th data-sort="bav_score">BAV (On-Ball)</th>
+            <th data-sort="sci_score">SCI (Off-Ball)</th>
+            <th data-sort="fspv_score">Unified FSPV</th>
+            <th data-sort="fspv_percentile">Percentile</th>
+          </tr>
+        </thead>
+        <tbody id="tableBody"></tbody>
+      </table>
+    </div>
+
+    <div class="pagination-bar">
+      <div id="tablePageInfo">Page 1 of 1</div>
+      <div style="display: flex; gap: 8px;">
+        <button id="btnPrevPage" class="pagination-btn">Previous</button>
+        <button id="btnNextPage" class="pagination-btn">Next</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modular Scripts Execution -->
+  <script src="js/data_store.js"></script>
+  <script src="js/court_matrix.js"></script>
+  <script src="js/radar_chart.js"></script>
+  <script src="js/scatter_plot.js"></script>
+  <script src="js/scouting_drawer.js"></script>
+  <script src="js/dashboard.js"></script>
+
+</body>
+</html>
